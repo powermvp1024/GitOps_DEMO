@@ -1,26 +1,27 @@
-# Tomcat 9.0 기본 이미지 사용
+# ✅ Tomcat 9.0 기반 이미지
 FROM tomcat:9.0
 
-# 기본 ROOT 앱 제거
+# ✅ 기본 ROOT 제거 (원하는 경우만)
 RUN rm -rf /usr/local/tomcat/webapps/ROOT
 
-# JSP 및 설정 파일 복사
+# ✅ MySQL Connector 버전 환경 변수
+ENV MYSQL_DRIVER_VERSION=8.0.33
+
+# ✅ MySQL JDBC 드라이버 설치 (wget → JAR 복사)
+RUN apt-get update && apt-get install -y wget && \
+    wget -O /usr/local/tomcat/lib/mysql-connector-j-${MYSQL_DRIVER_VERSION}.jar \
+    https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/${MYSQL_DRIVER_VERSION}/mysql-connector-j-${MYSQL_DRIVER_VERSION}.jar && \
+    apt-get remove -y wget && apt-get autoremove -y && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# ✅ 애플리케이션 및 설정 파일 복사
 COPY ROOT/ /usr/local/tomcat/webapps/ROOT/
 COPY server.xml /usr/local/tomcat/conf/server.xml
 COPY context.xml /usr/local/tomcat/conf/context.xml
 
-# wget 설치
-RUN apt-get update && apt-get install -y wget
-
-# MySQL Connector/J 설치
-ENV MYSQL_DRIVER_VERSION=8.0.33
-RUN wget https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/${MYSQL_DRIVER_VERSION}/mysql-connector-j-${MYSQL_DRIVER_VERSION}.jar \
-    -O /usr/local/tomcat/lib/mysql-connector-java.jar
-# 실행 권한 확인(optional)
-RUN ls -l /usr/local/tomcat/lib/
-
-# 8080 포트 노출
+# ✅ Tomcat 포트 오픈
 EXPOSE 8080
 
-# Tomcat 실행
+# ✅ Tomcat 실행 (기본 CMD 유지)
 CMD ["catalina.sh", "run"]
+
