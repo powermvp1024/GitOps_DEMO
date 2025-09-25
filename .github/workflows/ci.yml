@@ -28,21 +28,44 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+ 
       # 4. Nginx 이미지 빌드 & 푸시
       - name: Build & Push nginx Docker image
         run: |
-          IMAGE_TAG=${GITHUB_SHA::7}
-          docker build -t ${{ steps.login-ecr.outputs.registry }}/ecr_nginx:$IMAGE_TAG -f ./Dockerfile.nginx .
-          docker push ${{ steps.login-ecr.outputs.registry }}/ecr_nginx:$IMAGE_TAG
-          echo "NGINX_IMAGE=${{ steps.login-ecr.outputs.registry }}/ecr_nginx:$IMAGE_TAG" >> $GITHUB_ENV
+          VERSION_TAG=v1.0
+          GIT_SHA_TAG=${GITHUB_SHA::7}
+
+      # Docker build 시 태그 2개 붙이기
+          docker build -t ${{ steps.login-ecr.outputs.registry }}/ecr_nginx:$VERSION_TAG \
+                 -t ${{ steps.login-ecr.outputs.registry }}/ecr_nginx:$GIT_SHA_TAG \
+                 -f ./Dockerfile.nginx .
+
+      # 두 개 태그 모두 push
+          docker push ${{ steps.login-ecr.outputs.registry }}/ecr_nginx:$VERSION_TAG
+          docker push ${{ steps.login-ecr.outputs.registry }}/ecr_nginx:$GIT_SHA_TAG
+
+      # 환경 변수에는 최신 버전(v1.0) 저장
+          echo "NGINX_IMAGE=${{ steps.login-ecr.outputs.registry }}/ecr_nginx:$VERSION_TAG" >> $GITHUB_ENV
+
 
       # 5. Tomcat 이미지 빌드 & 푸시
       - name: Build & Push tomcat Docker image
         run: |
-          IMAGE_TAG=${GITHUB_SHA::7}
-          docker build -t ${{ steps.login-ecr.outputs.registry }}/ecr_tomcat:$IMAGE_TAG -f ./Dockerfile.tomcat .
-          docker push ${{ steps.login-ecr.outputs.registry }}/ecr_tomcat:$IMAGE_TAG
-          echo "TOMCAT_IMAGE=${{ steps.login-ecr.outputs.registry }}/ecr_tomcat:$IMAGE_TAG" >> $GITHUB_ENV
+          VERSION_TAG=v1.0
+          GIT_SHA_TAG=${GITHUB_SHA::7}
+
+      # Docker build 시 태그 2개 붙이기
+          docker build -t ${{ steps.login-ecr.outputs.registry }}/ecr_tomcat:$VERSION_TAG \
+                 -t ${{ steps.login-ecr.outputs.registry }}/ecr_tomcat:$GIT_SHA_TAG \
+                 -f ./Dockerfile.tomcat .
+
+      # 두 개 태그 모두 push
+         docker push ${{ steps.login-ecr.outputs.registry }}/ecr_tomcat:$VERSION_TAG
+         docker push ${{ steps.login-ecr.outputs.registry }}/ecr_tomcat:$GIT_SHA_TAG
+
+      # 환경 변수에는 최신 버전(v1.0) 저장
+         echo "TOMCAT_IMAGE=${{ steps.login-ecr.outputs.registry }}/ecr_tomcat:$VERSION_TAG" >> $GITHUB_ENV
+
 
       # 6. Deployment YAML 업데이트
       - name: Update nginx Deployment YAML
@@ -55,13 +78,14 @@ jobs:
           IMAGE_TAG=${GITHUB_SHA::7}
           sed -i "s|image: .*|image: 595362810845.dkr.ecr.ap-northeast-2.amazonaws.com/ecr_tomcat:$IMAGE_TAG|" ./deployment-tomcat.yaml
 
+
       # 7. 변경사항이 있으면 커밋 & 푸시
       #- name: Commit and push if there are changes
       #  run: |
       #    git config --global user.name 'GitHub Actions'
       #    git config --global user.email 'github-actions@github.com'
       #    git add ./deployment-nginx.yaml ./deployment-tomcat.yaml
-      #    git diff --quiet && git diff --staged --quiet || (
+      #   git diff --quiet && git diff --staged --quiet || (
       #     git commit -m "Update image tag to ${GITHUB_SHA}"
       #     git push https://${{ secrets.PAT }}@github.com/${{ github.repository }}.git HEAD:${{ github.ref }}
       #   )
