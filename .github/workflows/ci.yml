@@ -31,35 +31,18 @@ jobs:
       # 4. Nginx 이미지 빌드 & 푸시
       - name: Build & Push nginx Docker image
         run: |
-          VERSION_TAG=v1.0
-          GIT_SHA_TAG=${GITHUB_SHA::7}
-
-          docker build -t ${{ steps.login-ecr.outputs.registry }}/ecr_nginx:$VERSION_TAG \
-                 -t ${{ steps.login-ecr.outputs.registry }}/ecr_nginx:$GIT_SHA_TAG \
-                 -f ./Dockerfile.nginx .
-
-          docker push ${{ steps.login-ecr.outputs.registry }}/ecr_nginx:$VERSION_TAG
-          docker push ${{ steps.login-ecr.outputs.registry }}/ecr_nginx:$GIT_SHA_TAG
-
-          echo "NGINX_IMAGE=${{ steps.login-ecr.outputs.registry }}/ecr_nginx:$VERSION_TAG" >> $GITHUB_ENV
-
+          IMAGE_TAG=${GITHUB_SHA::7}
+          docker build -t ${{ steps.login-ecr.outputs.registry }}/ecr_nginx:$IMAGE_TAG -f ./Dockerfile.nginx .
+          docker push ${{ steps.login-ecr.outputs.registry }}/ecr_nginx:$IMAGE_TAG
+          echo "NGINX_IMAGE=${{ steps.login-ecr.outputs.registry }}/ecr_nginx:$IMAGE_TAG" >> $GITHUB_ENV
 
       # 5. Tomcat 이미지 빌드 & 푸시
       - name: Build & Push tomcat Docker image
         run: |
-          VERSION_TAG=v1.0
-          GIT_SHA_TAG=${GITHUB_SHA::7}
-
-
-          docker build -t ${{ steps.login-ecr.outputs.registry }}/ecr_tomcat:$VERSION_TAG \
-                 -t ${{ steps.login-ecr.outputs.registry }}/ecr_tomcat:$GIT_SHA_TAG \
-                 -f ./Dockerfile.tomcat .
-          docker push ${{ steps.login-ecr.outputs.registry }}/ecr_tomcat:$VERSION_TAG
-          docker push ${{ steps.login-ecr.outputs.registry }}/ecr_tomcat:$GIT_SHA_TAG
-
-          echo "TOMCAT_IMAGE=${{ steps.login-ecr.outputs.registry }}/ecr_tomcat:$VERSION_TAG" >> $GITHUB_ENV
-
-
+          IMAGE_TAG=${GITHUB_SHA::7}
+          docker build -t ${{ steps.login-ecr.outputs.registry }}/ecr_tomcat:$IMAGE_TAG -f ./Dockerfile.tomcat .
+          docker push ${{ steps.login-ecr.outputs.registry }}/ecr_tomcat:$IMAGE_TAG
+          echo "TOMCAT_IMAGE=${{ steps.login-ecr.outputs.registry }}/ecr_tomcat:$IMAGE_TAG" >> $GITHUB_ENV
 
       # 6. Deployment YAML 업데이트
       - name: Update nginx Deployment YAML
@@ -71,7 +54,6 @@ jobs:
         run: |
           IMAGE_TAG=${GITHUB_SHA::7}
           sed -i "s|image: .*|image: 595362810845.dkr.ecr.ap-northeast-2.amazonaws.com/ecr_tomcat:$IMAGE_TAG|" ./deployment-tomcat.yaml
-
 
       # 7. 변경사항이 있으면 커밋 & 푸시
       #- name: Commit and push if there are changes
